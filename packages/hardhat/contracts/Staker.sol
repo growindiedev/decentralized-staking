@@ -9,7 +9,7 @@ contract Staker {
   mapping( address => uint256) public balances;
   bool public openForWithdraw;
   uint256 public constant threshold = 1 ether;
-  uint256 public deadline = block.timestamp + 40 seconds;
+  uint256 public deadline = block.timestamp + 50 seconds;
   event Stake(address staker, uint256 balance);
   
 
@@ -20,7 +20,6 @@ contract Staker {
   function stake() public payable  {
     emit Stake(msg.sender, msg.value);
     balances[msg.sender] = balances[msg.sender] + msg.value;
-
   }
 
   function timeLeft() public view returns(uint256) {
@@ -32,25 +31,26 @@ contract Staker {
 
   function execute() public {
     //require(timeLeft() > 0 );
-    if(timeLeft() > 0 && address(this).balance >= threshold ){
+    if(timeLeft() > 0 && address(this).balance >= threshold){
       exampleExternalContract.complete{value: address(this).balance}();
       openForWithdraw = false;
-      //deadline = block.timestamp + 40 seconds;
     } else if (address(this).balance <= threshold){
       openForWithdraw = true;
     }
   }
 
   function withdraw(address payable gucci) public {
-    require(openForWithdraw == true && timeLeft() == 0);
+    require(openForWithdraw == true && address(this).balance <= threshold);
     address payable owner;
     if(balances[msg.sender] != 0){
       owner = payable(msg.sender);
     }
-    owner.transfer(balances[gucci]);
-    openForWithdraw = false;
+    bool whoop = gucci.send(balances[msg.sender]);//gucci.send(balances[gucci]);
+    //openForWithdraw = false;
+    //deadline == 0 ? (deadline =  block.timestamp + 50 seconds) : deadline = deadline;
 
   }
+
 
   
 
