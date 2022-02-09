@@ -11,13 +11,24 @@ contract Staker {
   uint256 public constant threshold = 1 ether;
   uint256 public deadline = block.timestamp + 50 seconds;
   event Stake(address staker, uint256 balance);
+
   
 
   constructor(address exampleExternalContractAddress) public {
       exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
   }
 
-  function stake() public payable  {
+  modifier notCompleted() {
+    require(exampleExternalContract.completed() == false);
+    _;
+  }
+
+
+  receive() external payable {
+    stake();
+  }
+
+  function stake() public payable  notCompleted {
     emit Stake(msg.sender, msg.value);
     balances[msg.sender] = balances[msg.sender] + msg.value;
   }
@@ -29,17 +40,18 @@ contract Staker {
     return deadline;
   }
 
-  function execute() public {
+  function execute() public notCompleted {
     //require(timeLeft() > 0 );
-    if(timeLeft() > 0 && address(this).balance >= threshold){
+    if(timeLeft() == 0 && address(this).balance > threshold){
       exampleExternalContract.complete{value: address(this).balance}();
       openForWithdraw = false;
-    } else if (address(this).balance <= threshold){
+    }
+    else if (timeLeft() == 0  && address(this).balance <= threshold){
       openForWithdraw = true;
     }
   }
 
-  function withdraw(address payable gucci) public {
+  function withdraw(address payable gucci) public notCompleted {
     require(openForWithdraw == true && address(this).balance <= threshold);
     address payable owner;
     if(balances[msg.sender] != 0){
@@ -50,6 +62,8 @@ contract Staker {
     //deadline == 0 ? (deadline =  block.timestamp + 50 seconds) : deadline = deadline;
 
   }
+
+  
 
 
   
